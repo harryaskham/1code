@@ -9,24 +9,19 @@
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs { inherit system; };
+        pkgs = import nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
+        };
       in {
-        packages = {
-          default = pkgs.callPackage ./default.nix { };
+        packages = rec {
           _1code = pkgs.callPackage ./default.nix { };
+          default = _1code;
         };
 
         apps.default = flake-utils.lib.mkApp {
           drv = self.packages.${system}.default;
           exePath = "/bin/1code";
-        };
-
-        devShells.default = pkgs.mkShell {
-          buildInputs = with pkgs; [
-            bun
-            nodejs
-            python3
-          ];
         };
       });
 }
