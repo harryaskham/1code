@@ -18,6 +18,8 @@
   gnumake,
   gnused,
   electron,
+  # Claude Code binary - override this with your custom wrapper
+  claude-code,
   ...
 }:
 
@@ -119,16 +121,31 @@ stdenv.mkDerivation rec {
       mkdir -p $out/Applications
       cp -r release/mac-arm64/1Code.app $out/Applications/
 
+      # Create Claude Code wrapper in the location 1Code expects
+      mkdir -p "$out/Applications/1Code.app/Contents/Resources/bin"
+      makeWrapper "${claude-code}/bin/claude" "$out/Applications/1Code.app/Contents/Resources/bin/claude"
+
       # Create bin symlink for CLI access
       mkdir -p $out/bin
       makeWrapper "$out/Applications/1Code.app/Contents/MacOS/1Code" $out/bin/1code
     '' else ''
-      mkdir -p $out/bin
-      cp -r release/linux/1code $out/bin/1code
+      mkdir -p $out/bin $out/lib/1code
+      cp -r release/linux/* $out/lib/1code/
+
+      # Create Claude Code wrapper in the location 1Code expects
+      mkdir -p "$out/lib/1code/resources/bin"
+      makeWrapper "${claude-code}/bin/claude" "$out/lib/1code/resources/bin/claude"
+
+      makeWrapper $out/lib/1code/1code $out/bin/1code
     ''}
 
     runHook postInstall
   '';
+
+  # Allow overriding the claude-code package
+  passthru = {
+    inherit claude-code;
+  };
 
   meta = with lib; {
     description = "1Code - AI coding assistant";
